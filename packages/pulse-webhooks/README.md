@@ -123,6 +123,12 @@ Attaches a delivery driver to a `Watcher`. Every event the watcher emits is deli
 | `config.deliveryTimeoutMs`    | `number`             | `10_000` | Abort threshold for each HTTP attempt                                                 |
 | `config.allowPrivateNetworks` | `boolean`            | `false`  | If true, bypass SSRF checks for local/private IP ranges                               |
 
+### `new RedisRetryQueue(client, options?)`
+
+Provides a Redis-backed `RetryQueue` adapter without bundling a Redis client. Pass any client that implements the small `RedisLike` sorted-set surface: `zadd`, `zrangebyscore`, `zrevrange`, `zrem`, and `zcard`.
+
+Records are stored in a sorted set keyed by `nextRetryAt`. The key convention is `<keyPrefix>:retry-queue:<queueName>` — defaults to `orbital:pulse-webhooks:retry-queue:default`.
+
 ### `verifyWebhook(payload, signature, secret, timestamp, options?)` → `NormalizedEvent | null`
 
 Verifies that `payload` was signed with `secret` using `timestamp + "." + payload`. Returns the parsed event on success, `null` on any failure (bad signature, malformed JSON, invalid timestamp, length mismatch).
