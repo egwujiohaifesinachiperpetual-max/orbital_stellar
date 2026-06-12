@@ -44,7 +44,7 @@ class StubRpc implements SorobanRpcLike {
   async getEvents(
     startCursor: string | undefined,
     limit: number,
-    _signal?: AbortSignal
+    _signal?: AbortSignal,
   ): Promise<{ events: SorobanEvent[] }> {
     this.callCount++;
     const startIdx = startCursor

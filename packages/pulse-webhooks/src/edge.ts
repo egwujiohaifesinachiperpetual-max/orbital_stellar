@@ -76,11 +76,17 @@ export async function verifyWebhookEdgeRaw(
   try {
     const keyData = new TextEncoder().encode(secret);
     const key = await crypto.subtle.importKey(
-      "raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
     );
     const signedPayload = `${timestamp}.${payload}`;
     const expectedBuffer = await crypto.subtle.sign(
-      "HMAC", key, new TextEncoder().encode(signedPayload),
+      "HMAC",
+      key,
+      new TextEncoder().encode(signedPayload),
     );
     const signatureBytes = new Uint8Array(
       signature.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) || [],

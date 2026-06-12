@@ -173,7 +173,7 @@ describe("SorobanSubscriber — graceful shutdown", () => {
     });
 
     await expect(
-      Promise.all([subscriber.stop(), subscriber.stop(), subscriber.stop()])
+      Promise.all([subscriber.stop(), subscriber.stop(), subscriber.stop()]),
     ).resolves.not.toThrow();
   });
 
@@ -191,9 +191,7 @@ describe("SorobanSubscriber — graceful shutdown", () => {
       },
     });
 
-    await expect(subscriber.pollOnce()).rejects.toThrow(
-      "Soroban RPC Network Timeout"
-    );
+    await expect(subscriber.pollOnce()).rejects.toThrow("Soroban RPC Network Timeout");
     expect(emittedEvents).toHaveLength(0);
   });
 });

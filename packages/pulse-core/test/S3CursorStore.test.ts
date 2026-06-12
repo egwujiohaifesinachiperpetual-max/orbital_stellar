@@ -13,8 +13,7 @@ function makeMockS3(): { s3: S3Like; _store: Map<string, string> } {
       return { Body: store.get(Key)! };
     },
     async putObject({ Bucket, Key, Body }) {
-      const text =
-        typeof Body === "string" ? Body : Buffer.from(Body).toString();
+      const text = typeof Body === "string" ? Body : Buffer.from(Body).toString();
       store.set(Key, text);
     },
   };

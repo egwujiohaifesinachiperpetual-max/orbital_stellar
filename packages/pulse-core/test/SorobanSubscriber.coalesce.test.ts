@@ -19,7 +19,11 @@ class MemoryCursorStore implements CursorStoreLike {
 }
 
 class MockRpc implements SorobanRpcLike {
-  public calls: { startCursor: string | undefined; limit: number; filters?: ContractSubscriptionFilter[] }[] = [];
+  public calls: {
+    startCursor: string | undefined;
+    limit: number;
+    filters?: ContractSubscriptionFilter[];
+  }[] = [];
   public responseMap = new Map<string, SorobanEvent[]>();
   public defaultResponse: SorobanEvent[] = [];
 
@@ -27,10 +31,10 @@ class MockRpc implements SorobanRpcLike {
     startCursor: string | undefined,
     limit: number,
     signal?: AbortSignal,
-    filters?: ContractSubscriptionFilter[]
+    filters?: ContractSubscriptionFilter[],
   ): Promise<{ events: SorobanEvent[] }> {
     this.calls.push({ startCursor, limit, filters });
-    
+
     if (filters && filters.length > 0) {
       const matchedEvents: SorobanEvent[] = [];
       for (const filter of filters) {
@@ -48,7 +52,12 @@ class MockRpc implements SorobanRpcLike {
   }
 }
 
-function makeEvent(id: string, pagingToken: string, contractId?: string, topic: string[] = []): SorobanEvent {
+function makeEvent(
+  id: string,
+  pagingToken: string,
+  contractId?: string,
+  topic: string[] = [],
+): SorobanEvent {
   return { id, pagingToken, topic, value: "data", contractId, type: "contract.emitted" };
 }
 
@@ -63,7 +72,7 @@ describe("SorobanSubscriber — coalescing and parallel filters", () => {
 
   it("coalesces up to 5 subscriptions into a single RPC call", async () => {
     const subscriber = new SorobanSubscriber({ rpc, cursorStore });
-    
+
     subscriber.subscriptions = [
       { id: "sub1", filters: [{ contractIds: ["C1"] }] },
       { id: "sub2", filters: [{ contractIds: ["C2"] }] },
@@ -85,7 +94,7 @@ describe("SorobanSubscriber — coalescing and parallel filters", () => {
 
   it("splits subscriptions into multiple parallel RPC calls when filters count > 5", async () => {
     const subscriber = new SorobanSubscriber({ rpc, cursorStore });
-    
+
     subscriber.subscriptions = Array.from({ length: 7 }, (_, i) => ({
       id: `sub-${i}`,
       filters: [{ contractIds: [`C-${i}`] }],
@@ -100,7 +109,7 @@ describe("SorobanSubscriber — coalescing and parallel filters", () => {
 
   it("optimizes to a single match-all RPC call if any subscription has no filters", async () => {
     const subscriber = new SorobanSubscriber({ rpc, cursorStore });
-    
+
     subscriber.subscriptions = [
       { id: "sub1", filters: [{ contractIds: ["C1"] }] },
       { id: "sub2", filters: [] },
@@ -115,7 +124,7 @@ describe("SorobanSubscriber — coalescing and parallel filters", () => {
 
   it("routes returned events back to the originating subscriptions and sorts them chronologically", async () => {
     const subscriber = new SorobanSubscriber({ rpc, cursorStore });
-    
+
     const sub1Events: SorobanEvent[] = [];
     const sub2Events: SorobanEvent[] = [];
 
@@ -123,26 +132,30 @@ describe("SorobanSubscriber — coalescing and parallel filters", () => {
       {
         id: "sub1",
         filters: [{ contractIds: ["C1"] }],
-        onEvent: async (evt) => { sub1Events.push(evt); }
+        onEvent: async (evt) => {
+          sub1Events.push(evt);
+        },
       },
       {
         id: "sub2",
         filters: [{ contractIds: ["C2"] }],
-        onEvent: async (evt) => { sub2Events.push(evt); }
-      }
+        onEvent: async (evt) => {
+          sub2Events.push(evt);
+        },
+      },
     ];
 
     rpc.responseMap.set(JSON.stringify({ contractIds: ["C1"] }), [
-      makeEvent("evt-B", "0000000002", "C1")
+      makeEvent("evt-B", "0000000002", "C1"),
     ]);
     rpc.responseMap.set(JSON.stringify({ contractIds: ["C2"] }), [
-      makeEvent("evt-A", "0000000001", "C2")
+      makeEvent("evt-A", "0000000001", "C2"),
     ]);
 
     for (let i = 0; i < 6; i++) {
       subscriber.subscriptions.push({
         id: `dummy-${i}`,
-        filters: [{ contractIds: [`CDUMMY-${i}`] }]
+        filters: [{ contractIds: [`CDUMMY-${i}`] }],
       });
     }
 
@@ -162,7 +175,9 @@ describe("SorobanSubscriber — coalescing and parallel filters", () => {
     const subscriber = new SorobanSubscriber({
       rpc,
       cursorStore,
-      onEvent: async (evt) => { emitted.push(evt); }
+      onEvent: async (evt) => {
+        emitted.push(evt);
+      },
     });
 
     rpc.defaultResponse = [makeEvent("evt-1", "0000000001")];
