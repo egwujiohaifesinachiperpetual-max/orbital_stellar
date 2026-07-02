@@ -26,59 +26,8 @@ async function expectSorobanRpcError(
 }
 
 describe("SorobanRpcClient", () => {
-  it("returns the latest ledger sequence", async () => {
-    const fetch = vi.fn(async () =>
-      jsonResponse({
-        jsonrpc: "2.0",
-        id: 1,
-        result: {
-          id: "000001",
-          protocolVersion: 22,
-          sequence: 12345,
-        },
-      }),
-    ) as unknown as typeof globalThis.fetch;
-
-    const client = new SorobanRpcClient({ url: "https://rpc.example", fetch });
-    const sequence = await client.getLatestLedger();
-
-    expect(sequence).toBe(12345);
-    expect(fetch).toHaveBeenCalledWith(
-      "https://rpc.example",
-      expect.objectContaining({
-        method: "POST",
-        body: expect.stringContaining('"method":"getLatestLedger"'),
-        signal: expect.any(AbortSignal),
-      }),
-    );
-  });
-
-  it("returns network info and caches it", async () => {
-    const fetch = vi.fn(async () =>
-      jsonResponse({
-        jsonrpc: "2.0",
-        id: 1,
-        result: {
-          friendbotUrl: "https://friendbot.stellar.org",
-          passphrase: "Test SDF Network ; September 2015",
-          protocolVersion: 22,
-        },
-      }),
-    ) as unknown as typeof globalThis.fetch;
-
-    const client = new SorobanRpcClient({ url: "https://rpc.example", fetch });
-    const network = await client.getNetwork();
-
-    expect(network).toEqual({
-      friendbotUrl: "https://friendbot.stellar.org",
-      passphrase: "Test SDF Network ; September 2015",
-      protocolVersion: 22,
-    });
-    expect(SorobanRpcClient.getNetwork()).toEqual(network);
-  });
-
   it("returns typed getEvents responses", async () => {
-    const fetch = vi.fn(async () =>
+    const fetchImpl = vi.fn(async () =>
       jsonResponse({
         jsonrpc: "2.0",
         id: "pulse-core-getEvents",
@@ -88,9 +37,9 @@ describe("SorobanRpcClient", () => {
           cursor: "000001",
         },
       }),
-    ) as unknown as typeof globalThis.fetch;
+    ) as unknown as typeof fetch;
 
-    const client = new SorobanRpcClient({ url: "https://rpc.example", fetch });
+    const client = new SorobanRpcClient({ rpcUrl: "https://rpc.example", fetchImpl });
     const result = await client.getEvents("000000", 10);
 
     expect(result).toEqual({
@@ -98,7 +47,7 @@ describe("SorobanRpcClient", () => {
       latestLedger: 123,
       cursor: "000001",
     });
-    expect(fetch).toHaveBeenCalledWith(
+    expect(fetchImpl).toHaveBeenCalledWith(
       "https://rpc.example",
       expect.objectContaining({
         method: "POST",
@@ -116,12 +65,12 @@ describe("SorobanRpcClient", () => {
     [500, "server", true],
     [503, "server", true],
   ] as const)("maps HTTP %s to %s retryable=%s", async (status, code, retryable) => {
-    const fetch = vi.fn(async () =>
+    const fetchImpl = vi.fn(async () =>
       jsonResponse({ error: "nope" }, status),
-    ) as unknown as typeof globalThis.fetch;
-    const client = new SorobanRpcClient({ url: "https://rpc.example", fetch });
+    ) as unknown as typeof fetch;
+    const client = new SorobanRpcClient({ rpcUrl: "https://rpc.example", fetchImpl });
 
-    await expectSorobanRpcError(() => client.getLatestLedger(), {
+    await expectSorobanRpcError(() => client.getEvents(), {
       code,
       retryable,
       status,
@@ -129,46 +78,22 @@ describe("SorobanRpcClient", () => {
   });
 
   it("maps fetch failures to retryable network errors", async () => {
-    const fetch = vi.fn(async () => {
+    const fetchImpl = vi.fn(async () => {
       throw new Error("ECONNRESET");
-    }) as unknown as typeof globalThis.fetch;
-    const client = new SorobanRpcClient({ url: "https://rpc.example", fetch });
+    }) as unknown as typeof fetch;
+    const client = new SorobanRpcClient({ rpcUrl: "https://rpc.example", fetchImpl });
 
-    await expectSorobanRpcError(() => client.getLatestLedger(), {
+    await expectSorobanRpcError(() => client.getEvents(), {
       code: "network",
       retryable: true,
     });
   });
 
-  it("aborts requests on timeout", async () => {
-    vi.useFakeTimers();
-    try {
-      const fetch = vi.fn((_url, init) => {
-        return new Promise<Response>((_resolve, reject) => {
-          init?.signal?.addEventListener("abort", () => {
-            reject(init.signal?.reason ?? new DOMException("Aborted", "AbortError"));
-          });
-        });
-      }) as unknown as typeof globalThis.fetch;
-      const client = new SorobanRpcClient({ url: "https://rpc.example", fetch, timeoutMs: 25 });
-
-      const request = expect(client.getLatestLedger()).rejects.toMatchObject({
-        name: "AbortError",
-      });
-      await vi.advanceTimersByTimeAsync(25);
-
-      await request;
-      expect(fetch).toHaveBeenCalledTimes(1);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
   it("maps malformed JSON to terminal invalid_request", async () => {
-    const fetch = vi.fn(
+    const fetchImpl = vi.fn(
       async () => new Response("{", { status: 200 }),
-    ) as unknown as typeof globalThis.fetch;
-    const client = new SorobanRpcClient({ url: "https://rpc.example", fetch });
+    ) as unknown as typeof fetch;
+    const client = new SorobanRpcClient({ rpcUrl: "https://rpc.example", fetchImpl });
 
     await expectSorobanRpcError(() => client.getEvents(), {
       code: "invalid_request",
@@ -177,14 +102,14 @@ describe("SorobanRpcClient", () => {
   });
 
   it("maps JSON-RPC server errors to retryable server errors", async () => {
-    const fetch = vi.fn(async () =>
+    const fetchImpl = vi.fn(async () =>
       jsonResponse({
         jsonrpc: "2.0",
         id: "pulse-core-getEvents",
         error: { code: -32001, message: "temporary upstream failure" },
       }),
-    ) as unknown as typeof globalThis.fetch;
-    const client = new SorobanRpcClient({ url: "https://rpc.example", fetch });
+    ) as unknown as typeof fetch;
+    const client = new SorobanRpcClient({ rpcUrl: "https://rpc.example", fetchImpl });
 
     await expectSorobanRpcError(() => client.getEvents(), {
       code: "server",
@@ -193,14 +118,14 @@ describe("SorobanRpcClient", () => {
   });
 
   it("maps JSON-RPC request errors to terminal invalid_request errors", async () => {
-    const fetch = vi.fn(async () =>
+    const fetchImpl = vi.fn(async () =>
       jsonResponse({
         jsonrpc: "2.0",
         id: "pulse-core-getEvents",
         error: { code: -32602, message: "invalid params" },
       }),
-    ) as unknown as typeof globalThis.fetch;
-    const client = new SorobanRpcClient({ url: "https://rpc.example", fetch });
+    ) as unknown as typeof fetch;
+    const client = new SorobanRpcClient({ rpcUrl: "https://rpc.example", fetchImpl });
 
     await expectSorobanRpcError(() => client.getEvents(), {
       code: "invalid_request",

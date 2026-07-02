@@ -3,20 +3,7 @@ import type { StellarAmount } from "./amount.js";
 import type { AccountAddress, MuxedAddress, ContractAddress } from "./address.js";
 
 export { SorobanRpcClient } from "./SorobanRpcClient.js";
-export type {
-  JsonRpcFailure,
-  JsonRpcResponse,
-  JsonRpcSuccess,
-  SorobanEventFilter,
-  SorobanEventXdrFormat,
-  SorobanGetEventsParams,
-  SorobanGetEventsResult,
-  SorobanLatestLedgerResult,
-  SorobanNetworkInfo,
-  SorobanRpcCallOptions,
-  SorobanRpcClientOptions,
-  SorobanRpcEvent,
-} from "./SorobanRpcClient.js";
+export type { SorobanRpcClientOptions } from "./SorobanRpcClient.js";
 export { EventEngine } from "./EventEngine.js";
 export { SorobanSubscriber } from "./SorobanSubscriber.js";
 export type {
@@ -29,18 +16,8 @@ export type {
 
 export { validateContractFilters } from "./contractFilters.js";
 export { Watcher } from "./Watcher.js";
-export { toStellarAmount, toBigInt } from "./amount.js";
 export type { StellarAmount } from "./amount.js";
 export type { AccountAddress, MuxedAddress, ContractAddress } from "./address.js";
-export {
-  isAccountAddress,
-  isMuxedAddress,
-  isContractAddress,
-  isStellarAddress,
-  toAccountAddress,
-  toMuxedAddress,
-  toContractAddress,
-} from "./address.js";
 export { EngineAlreadyStartedError, HorizonStreamError } from "./errors.js";
 export { StrKey } from "@stellar/stellar-sdk";
 export { CursorStore } from "./CursorStore.js";
@@ -556,13 +533,6 @@ export type ContractEmittedEvent = {
 };
 
 export type ContractEvent = ContractInvokedEvent | ContractEmittedEvent;
-
-export type DecodeFailedNotification = {
-  type: "event.decode_failed";
-  contractId: ContractAddress;
-  eventId?: string;
-  error: string;
-};
 
 /**
  * Filter criteria for a contract subscription.

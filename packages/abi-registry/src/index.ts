@@ -10,4 +10,3 @@ export { LocalFilePublisher } from "./RegistryPublisher.js";
 
 export { decodeContractEvent } from "./decode.js";
 export type { DecodedEvent, DecodedValue, DecodeError, DecodeResult } from "./decode.js";
-export { LocalAbiRegistryClient } from "./LocalAbiRegistryClient.js";

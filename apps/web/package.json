@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "pagefind": "pagefind --source .next --output public/pagefind",
-    "postbuild": "npm run pagefind"
+    "pagefind": "pagefind --source content --output-path public/search"
   },
   "dependencies": {
 

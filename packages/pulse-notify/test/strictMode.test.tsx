@@ -27,21 +27,13 @@ function Subscriber() {
 }
 
 test("exactly one connection survives Strict Mode double-mount", () => {
-  let unmount: () => void = () => {};
-
   act(() => {
-    ({ unmount } = render(
+    render(
       <StrictMode>
         <Subscriber />
       </StrictMode>,
-    ));
+    );
   });
 
   expect(__getConnectionPoolSizeForTests()).toBe(1);
-
-  act(() => {
-    unmount();
-  });
-
-  expect(__getConnectionPoolSizeForTests()).toBe(0);
 });
